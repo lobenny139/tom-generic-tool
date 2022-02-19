@@ -1,9 +1,9 @@
 package com.tom.generic.tool.service.provider;
 
 import com.tom.generic.tool.service.IHttpService;
-
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -16,6 +16,8 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -23,6 +25,10 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
+@Getter
+@Setter
+@Component
+@Service
 public class HttpService implements IHttpService {
 
 //    https://www.ewdna.com/2009/11/apache-httpclient-4x-get-post.html
@@ -69,10 +75,10 @@ public class HttpService implements IHttpService {
         CloseableHttpClient httpClient = null;
         CloseableHttpResponse response = null;
         try{
-            httpClient = null;
+            httpClient = this.getClient(isSSL);
             HttpGet request = new HttpGet( requestUrl );
             logger.info("Try to send " + request.getMethod() + " request to remote[url=" + requestUrl + "]");
-            logger.info("Security Get:" + isSSL);
+            logger.info("Security " + request.getMethod() + ":" + isSSL);
 
             // add request headers
             if(headers != null && headers.size() > 0) {
@@ -86,16 +92,8 @@ public class HttpService implements IHttpService {
             response = httpClient.execute(request);
             logger.info("Sent, and remote response status[" + response.getStatusLine().toString() +"]");
 
-//            System.out.println(response.getProtocolVersion());              // HTTP/1.1
-//            System.out.println(response.getStatusLine().getStatusCode());   // 200
-//            System.out.println(response.getStatusLine().getReasonPhrase()); // OK
-//            System.out.println(response.getStatusLine().toString());        // HTTP/1.1 200 OK
+            result = handleResponse(response);
 
-            HttpEntity entity = response.getEntity();
-            if (entity != null) {
-                // return it as a String
-                result = EntityUtils.toString(entity);
-            }
         }catch(Exception e){
             throw new RuntimeException(e);
         }finally{
@@ -122,7 +120,7 @@ public class HttpService implements IHttpService {
             httpClient = this.getClient(isSSL);
             HttpPost request = new HttpPost(requestUrl);
             logger.info("Try to send" + request.getMethod() + " request to remote[url=" + requestUrl + "]");
-            logger.info("Security Get:" + isSSL);
+            logger.info("Security " + request.getMethod() + ":" + isSSL);
 
             // add request headers
             if(headers != null && headers.size() > 0) {
@@ -140,21 +138,42 @@ public class HttpService implements IHttpService {
             response = httpClient.execute(request);
             logger.info("Sent, and remote response status[" + response.getStatusLine().toString() +"]");
 
-            HttpEntity entity = response.getEntity();
-            if (entity != null) {
-                // return it as a String
-                result = EntityUtils.toString(entity);
-            }
+            result = handleResponse(response);
 
         }catch(Exception e){
             throw new RuntimeException(e);
         }finally{
-            try{
-                if(response != null){response.close();}
-                if(httpClient != null){httpClient.close();}
-            }catch(Exception e){
+            try {
+                if (response != null) {
+                    response.close();
+                }
+                if (httpClient != null) {
+                    httpClient.close();
+                }
+            }catch(IOException e){}
+        }
+        return result;
+    }
 
+    protected String handleResponse(CloseableHttpResponse response) throws IOException {
+        String result = null;
+        if(response!= null && response.getStatusLine().getStatusCode() == 200){
+//            System.out.println(response.getProtocolVersion());              // HTTP/1.1
+//            System.out.println(response.getStatusLine().getStatusCode());   // 200
+//            System.out.println(response.getStatusLine().getReasonPhrase()); // OK
+//            System.out.println(response.getStatusLine().toString());        // HTTP/1.1 200 OK
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                // return page content
+                result = EntityUtils.toString(entity);
+            }else{
+                result = response.getStatusLine().toString();
             }
+        }else if(response!= null && response.getStatusLine().getStatusCode() != 200){
+            result = Integer.toString(response.getStatusLine().getStatusCode());
+        }else{
+            result = "Remote NO Response";
+            logger.warn(result);
         }
         return result;
     }

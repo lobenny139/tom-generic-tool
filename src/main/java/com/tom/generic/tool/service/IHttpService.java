@@ -10,6 +10,6 @@ public interface IHttpService {
 
     public String sendPOST(String requestUrl, String body, Map<String, String> headers);
 
-    public String sendSSHPOST(String requestUrl, String body, Map<String, String> headers) throws Exception;
+    public String sendSSHPOST(String requestUrl, String body, Map<String, String> headers) ;
 
 }
