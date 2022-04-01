@@ -1,5 +1,7 @@
 package com.tom.generic.tool.test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import com.tom.generic.tool.service.IHttpService;
 import org.junit.Test;
@@ -10,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,7 +54,24 @@ public class TestHttpService {
     public void testPost(){
         String url = "https://www.post.gov.tw/post/streetNameData?city=臺北市&cityarea=內湖區";
         System.out.println(service.sendSSHPOST(url, null, null));
+    }
 
+    @Test
+    public void testPost3() throws JsonProcessingException, UnsupportedEncodingException {
+        String url = "https://httpbin.org/post";
+        Map<String, String> body = new HashMap<>();
+        body.put("name","羅智全");
+        body.put("notes", "my notes");
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("username", "abc");
+        headers.put("password", "123");
+        headers.put("custom", "secret");
+        headers.put("Content-Type","application/json;charset=utf-8");
+
+        System.out.println(service.sendSSHPOST(url, new ObjectMapper().writeValueAsString(body), headers));
 
     }
+
+
 }
